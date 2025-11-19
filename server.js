@@ -6,7 +6,11 @@ const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: "*"
+  }
+});
 
 app.use(express.json());
 app.use(express.static("public"));
@@ -58,12 +62,11 @@ app.post("/login", (req, res) => {
   res.json({ message: "Connexion réussie", user });
 });
 
-// --- Socket.io (chat en temps réel) ---
+// --- Socket.io ---
 io.on("connection", (socket) => {
   console.log("🟢 Un utilisateur s'est connecté.");
   let username = "Anonyme";
 
-  // Envoyer l'historique au nouvel utilisateur
   socket.emit("load messages", getMessages());
 
   socket.on("register", (nom) => {
@@ -76,7 +79,6 @@ io.on("connection", (socket) => {
     const time = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
     const messageData = { user: username, text: msg, time };
 
-    // Enregistrer le message
     const messages = getMessages();
     messages.push(messageData);
     saveMessages(messages);
@@ -86,12 +88,12 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     io.emit("system", `${username} s'est déconnecté.`);
-    console.log("🔴 Un utilisateur s'est déconnecté.");
   });
 });
 
+// 👉 TRÈS IMPORTANT POUR RENDER
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`✅ Serveur démarré sur http://localhost:${PORT}`);
-});
 
+server.listen(PORT, () => {
+  console.log(`Serveur démarré sur port ${PORT}`);
+});
